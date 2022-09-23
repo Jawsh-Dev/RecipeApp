@@ -1,0 +1,182 @@
+﻿@page "/"
+@inject ICategoryData categoryData
+@inject IRecipeData recipeData
+@inject IUserData userData
+@inject NavigationManager navManager
+@inject ProtectedSessionStorage sessionStorage
+
+<h1>Recipes</h1>
+
+<div>
+    <button @onclick="LoadCreatePage">Create Recipe</button>
+</div>
+
+<div>
+    <div>@recipes?.Count Recipes</div>
+    <div class="col-md-4 col-xl-3 search-box">
+        <input type="text" placeholder="Search" 
+        aria-label="Search box" class="form-control rounded-control"
+        @oninput="((txt) => OnSearchInput((string)txt.Value))" />
+    </div>
+    <div>
+        @if (categories is not null && showCategories)
+        {
+            <div>
+                <span>Category</span>
+                <div @onclick="(() => OnCategoryClick())">All</div>
+                @foreach (var c in categories)
+               {
+                   <div @onclick="(() => OnCategoryClick(c.CategoryName))">
+                       @c.CategoryName
+                   </div>
+               }
+            </div>
+        }
+        else
+        {
+            <div @onclick="(() => showCategories = true)">
+                <span>@selectedCategory</span>
+            </div>
+        }
+    </div>
+</div>
+<div>
+    <div>
+        @if (recipes is not null)
+        {
+            <Virtualize Items="@recipes" Context="s" OverscanCount="10">
+                <div>
+                    <div>
+                        @*user Img*@
+                    </div>
+                    <div>
+                        <div @onclick="(() => OpenDetails(s))">
+                            <div>
+                                @s.Title
+                            </div>
+                            <div>
+                                <div @onclick="(() => OpenDetails(s))">
+                                    @s.Category?.CategoryName
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Virtualize>
+        }
+    </div>
+    @*<div class="col-md-4 col-xl-3 d-none d-md-block"> 
+        @if (categories is not null)
+        {
+            <div class="categories">
+                <span class="text-uppercase fw-bold">Category</span>
+                <div class="@GetSelectedCategory()" @onclick="(() => OnCategoryClick())">All</div>
+                @foreach(var c in categories)
+                {
+                    <div class="@GetSelectedCategory(c.CategoryName)" @onclick="(() => OnCategoryClick(c.CategoryName))">@c.CategoryName</div>
+                }
+            </div>
+        }
+    </div>*@
+</div>
+
+
+@code {
+    private UserModel loggedInUser;
+    private List<RecipeModel> recipes;
+    private List<CategoryModel> categories;
+    private string selectedCategory = "All";
+    private string searchText = "";
+    private bool isSortedByNew = true;
+    private bool showCategories = false;
+
+    protected async override Task OnInitializedAsync()
+    {
+        categories = await categoryData.GetAllCategories();
+    }
+
+    private void LoadCreatePage()
+    {
+        navManager.NavigateTo("/Create");
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadFilterState();
+            await FilterRecipes();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadFilterState()
+    {
+        var stringResults = await sessionStorage.GetAsync<string>(nameof(selectedCategory));
+        selectedCategory = stringResults.Success ? stringResults.Value : "All";
+        stringResults = await sessionStorage.GetAsync<string>(nameof(searchText));
+        searchText = stringResults.Success ? stringResults.Value : "";
+        var boolResults = await sessionStorage.GetAsync<bool>(nameof(isSortedByNew));
+        isSortedByNew = boolResults.Success ? boolResults.Value : true;
+    }
+
+    private async Task SaveFilterState()
+    {
+        await sessionStorage.SetAsync(nameof(selectedCategory), selectedCategory);
+        await sessionStorage.SetAsync(nameof(searchText), searchText);
+        await sessionStorage.SetAsync(nameof(isSortedByNew), isSortedByNew);
+    }
+
+    private async Task FilterRecipes()
+    {
+        var output = await recipeData.GetAllRecipes();
+        if (selectedCategory != "All")
+        {
+            output = output.Where(s => s.Category?.CategoryName == selectedCategory).ToList();
+        }
+
+        if (string.IsNullOrWhiteSpace(searchText) == false)
+        {
+            output = output.Where(s => s.Title.Contains(searchText, StringComparison.InvariantCultureIgnoreCase) || s.Description.Contains(searchText, StringComparison.InvariantCultureIgnoreCase)).ToList();
+        }
+
+        if (isSortedByNew)
+        {
+            output = output.OrderByDescending(s => s.DateCreated).ToList();
+        }
+        
+        recipes = output;
+        await SaveFilterState();
+    }
+
+    private async Task OnSearchInput(string searchInput)
+    {
+        searchText = searchInput;
+        await FilterRecipes();
+    }
+
+    private async Task OnCategoryClick(string category = "All")
+    {
+        selectedCategory = category;
+        showCategories = false;
+        await FilterRecipes();
+    }
+
+    private void OpenDetails(RecipeModel recipe)
+    {
+        navManager.NavigateTo($"/Details/{recipe.Id}");
+    }
+
+    private string GetSelectedCategory(string category = "All")
+        {
+            if (category == selectedCategory)
+            {
+                return "selected-category";
+            }
+            else
+            {
+                return "";
+            }
+        }
+}
+

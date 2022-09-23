@@ -1,0 +1,22 @@
+﻿@page "/Create"
+@using RecipeAppUI.Components
+@using RecipeAppUI.Models
+@inject AuthenticationStateProvider authProvider
+@inject ICategoryData categoryData
+@inject IRecipeData recipeData
+@inject IUserData userData
+@inject NavigationManager navManager
+
+<h1>Create Recipe</h1>
+
+@code {
+    private CreateRecipeModel recipe = new();
+    private List<CategoryModel> categories;
+    private UserModel loggedInUser;
+
+    protected async override Task OnInitializedAsync()
+    {
+        categories = await categoryData.GetAllCategories();
+        loggedInUser = await authProvider.GetUserFromAuth(userData);
+    }
+}

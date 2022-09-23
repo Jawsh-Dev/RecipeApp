@@ -1,0 +1,158 @@
+﻿@page "/SampleData"
+@inject ICategoryData categoryData
+@inject IUserData userData
+@inject IRecipeData recipeData
+
+<h3>Sample Data</h3>
+
+@if (categoriesCreated)
+{
+    <h4>Categories have been created</h4>
+}
+else
+{
+    <button class="btn btn-primary" @onclick="CreateCategories">Create Categories</button>
+}
+
+<button class="btn btn-danger" @onclick="GenerateSampleData">Generate Sample Data</button>
+
+@code {
+    private bool categoriesCreated = false;
+    private bool ingredientsCreated = false;
+
+    private async Task GenerateSampleData()
+    {
+        UserModel user = new()
+        {
+            FirstName = "Josh",
+            LastName = "Vaughn",
+            EmailAddress = "josh@test.com",
+            DisplayName = "Sample Josh Vaughn",
+            ObjectIdentifier = "abc-123"
+        };
+        await userData.CreateUser(user);
+
+        var foundUser = await userData.GetUserFromAuthentication("abc-123");
+        var categories = await categoryData.GetAllCategories();
+
+        RecipeModel recipe = new()
+            {
+            Author = new BasicUserModel(foundUser),
+            Title = "First Recipe",
+            Description = "This is our first recipe",
+            Category = categories[0]
+            };
+        await recipeData.CreateRecipe(recipe);
+
+        recipe = new()
+            {
+                Author = new BasicUserModel(foundUser),
+                Title = "Second Recipe",
+                Description = "This is our second recipe",
+                Category = categories[1]
+            };
+        await recipeData.CreateRecipe(recipe);
+
+        recipe = new()
+        {
+            Author = new BasicUserModel(foundUser),
+            Title = "Third Recipe",
+            Description = "This is our third recipe",
+            Category = categories[2]
+        };
+        await recipeData.CreateRecipe(recipe);
+
+        recipe = new()
+        {
+            Author = new BasicUserModel(foundUser),
+            Title = "Fourth Recipe",
+            Description = "This is our fourth recipe",
+            Category = categories[3]
+        };
+        await recipeData.CreateRecipe(recipe);
+
+        recipe = new()
+        {
+            Author = new BasicUserModel(foundUser),
+            Title = "Fifth Recipe",
+            Description = "This is our fifth recipe",
+            Category = categories[4]
+        };
+        await recipeData.CreateRecipe(recipe);
+    }
+
+    private async Task CreateCategories()
+    {
+        var categories = await categoryData.GetAllCategories();
+
+        if (categories?.Count > 0)
+        {
+            return;
+        }
+
+        CategoryModel cat = new()
+        {
+            CategoryName = "American"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Thai"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Southern"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Vegan"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Vegetarian"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "American"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Japanese"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Mexican"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Spanish"
+        };
+        await categoryData.CreateCategory(cat);
+
+        cat = new()
+        {
+            CategoryName = "Basic"
+        };
+        await categoryData.CreateCategory(cat);
+
+        categoriesCreated = true;
+    }
+
+    
+
+}
